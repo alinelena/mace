@@ -138,7 +138,7 @@ def main() -> None:
     run(args)
 
 
-def run(args: argparse.Namespace):
+def run(args: argparse.Namespace) -> None:
     """
     This script loads an xyz dataset and prepares
     new hdf5 file that is ready for training with on-the-fly dataloading
