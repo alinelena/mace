@@ -375,7 +375,6 @@ def _load_descriptors(
     calc: MACECalculator | None,
     full_data_length: int,
 ) -> None:
-    logging.info("Load descriptors")
     if descriptors_path is not None:
         logging.info(f"Loading descriptors from {descriptors_path}")
         descriptors = np.load(descriptors_path, allow_pickle=True)
@@ -398,7 +397,7 @@ def _load_descriptors(
 
 def _maybe_save_descriptors(
     atoms: List[ase.Atoms],
-    output_path: str,
+    output_path: str|None,
     delete: bool = True,
 ) -> None:
     """
@@ -406,10 +405,14 @@ def _maybe_save_descriptors(
     Also, delete the descriptors from the atoms objects.
     """
     if all("mace_descriptors" in x.info for x in atoms):
-        output_path = Path(output_path)
-        descriptor_save_path = output_path.parent / (
-            output_path.stem + "_descriptors.npy"
-        )
+        if output_path:
+            output_path = Path(output_path)
+            descriptor_save_path = output_path.parent / (
+                output_path.stem + "_descriptors.npy"
+            )
+        else:
+            descriptor_save_path = "tmp_descriptors.npy"
+        
         logging.info(f"Saving descriptors at {descriptor_save_path}")
         descriptors_list = [x.info["mace_descriptors"] for x in atoms]
         np.save(descriptor_save_path, descriptors_list, allow_pickle=True)
@@ -465,6 +468,7 @@ def _subsample_data(
             calc,
             full_data_length=len(filtered_atoms) + len(remaining_atoms),
         )
+        _maybe_save_descriptors(filtered_atoms, descriptors_path, False)
         logging.info(
             f"Selecting {num_samples} configurations out of {len(filtered_atoms)} using Farthest Point Sampling"
         )
@@ -530,7 +534,6 @@ def select_samples(
             "suffix compatible with extxyz format"
         )
     output_path = Path(settings.configs_pt).name
-    _maybe_save_descriptors(filtered_pt_atoms, output_path, True)
     _maybe_save_descriptors(subsampled_atoms, settings.output)
 
     _write_metadata(
