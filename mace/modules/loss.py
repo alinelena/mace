@@ -388,6 +388,95 @@ class WeightedHuberEnergyForcesStressLoss(torch.nn.Module):
         )
 
 
+class UniversalAELoss(torch.nn.Module):
+    def __init__(
+        self, energy_weight=1.0, forces_weight=1.0, stress_weight=1.0, huber_delta=0.01
+    ) -> None:
+        super().__init__()
+        self.huber_delta = huber_delta
+        self.register_buffer(
+            "energy_weight",
+            torch.tensor(energy_weight, dtype=torch.get_default_dtype()),
+        )
+        self.register_buffer(
+            "forces_weight",
+            torch.tensor(forces_weight, dtype=torch.get_default_dtype()),
+        )
+        self.register_buffer(
+            "stress_weight",
+            torch.tensor(stress_weight, dtype=torch.get_default_dtype()),
+        )
+
+    def forward(
+        self, ref: Batch, pred: TensorDict, ddp: Optional[bool] = None
+    ) -> torch.Tensor:
+        num_atoms = ref.ptr[1:] - ref.ptr[:-1]
+        configs_stress_weight = ref.stress_weight.view(-1, 1, 1)
+        configs_energy_weight = ref.energy_weight
+        configs_forces_weight = torch.repeat_interleave(
+            ref.forces_weight, ref.ptr[1:] - ref.ptr[:-1]
+        ).unsqueeze(-1)
+        if ddp:
+            loss_energy = torch.nn.functional.huber_loss(
+                configs_energy_weight
+                * (ref["energy"] - ref["atomic_energy"])
+                / num_atoms,
+                configs_energy_weight
+                * (pred["energy"] - ref["atomic_energy"])
+                / num_atoms,
+                reduction="none",
+                delta=self.huber_delta,
+            )
+            loss_energy = reduce_loss(loss_energy, ddp)
+            loss_forces = conditional_huber_forces(
+                configs_forces_weight * ref["forces"],
+                configs_forces_weight * pred["forces"],
+                huber_delta=self.huber_delta,
+                ddp=ddp,
+            )
+            loss_stress = torch.nn.functional.huber_loss(
+                configs_stress_weight * ref["stress"],
+                configs_stress_weight * pred["stress"],
+                reduction="none",
+                delta=self.huber_delta,
+            )
+            loss_stress = reduce_loss(loss_stress, ddp)
+        else:
+            loss_energy = torch.nn.functional.huber_loss(
+                configs_energy_weight
+                * (ref["energy"] - ref["atomic_energy"])
+                / num_atoms,
+                configs_energy_weight
+                * (pred["energy"] - ref["atomic_energy"])
+                / num_atoms,
+                reduction="mean",
+                delta=self.huber_delta,
+            )
+            loss_forces = conditional_huber_forces(
+                configs_forces_weight * ref["forces"],
+                configs_forces_weight * pred["forces"],
+                huber_delta=self.huber_delta,
+                ddp=ddp,
+            )
+            loss_stress = torch.nn.functional.huber_loss(
+                configs_stress_weight * ref["stress"],
+                configs_stress_weight * pred["stress"],
+                reduction="mean",
+                delta=self.huber_delta,
+            )
+        return (
+            self.energy_weight * loss_energy
+            + self.forces_weight * loss_forces
+            + self.stress_weight * loss_stress
+        )
+
+    def __repr__(self):
+        return (
+            f"{self.__class__.__name__}(energy_weight={self.energy_weight:.3f}, "
+            f"forces_weight={self.forces_weight:.3f}, stress_weight={self.stress_weight:.3f})"
+        )
+
+
 class UniversalLoss(torch.nn.Module):
     def __init__(
         self, energy_weight=1.0, forces_weight=1.0, stress_weight=1.0, huber_delta=0.01

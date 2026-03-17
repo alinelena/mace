@@ -762,6 +762,7 @@ def build_default_arg_parser() -> argparse.ArgumentParser:
             "dipole_polar",
             "huber",
             "universal",
+            "universalAE",
             "energy_forces_dipole",
             "l1l2energyforces",
         ],

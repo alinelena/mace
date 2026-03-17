@@ -28,6 +28,7 @@ from .extensions import PolarMACE
 from .loss import (
     DipolePolarLoss,
     DipoleSingleLoss,
+    UniversalAELoss,
     UniversalLoss,
     WeightedEnergyForcesDipoleLoss,
     WeightedEnergyForcesL1L2Loss,
@@ -119,6 +120,7 @@ __all__ = [
     "WeightedEnergyForcesDipoleLoss",
     "WeightedHuberEnergyForcesStressLoss",
     "UniversalLoss",
+    "UniversalAELoss",
     "WeightedEnergyForcesL1L2Loss",
     "SymmetricContraction",
     "interaction_classes",
