@@ -36,7 +36,7 @@ Python Dependencies
 
 In addition to the standard MACE dependencies, you'll need:
 
-- **cuEquivariance**: Base, torch, and torch backend from `NVIDIA cuEquivariance <https://github.com/NVIDIA/cuEquivariance>`_
+- **cuEquivariance**: Base, torch, and torch backend from `NVIDIA cuEquivariance <https://github.com/NVIDIA/cuEquivariance>`_ You need to install `pip install cuequivariance-torch`, and `pip install cuequivariance`, and the kernels `pip install cuequivariance-ops-torch-cu12` (or cu11).
 - **cupy-cuda12x**: Compatible with your CUDA version
 - **lammps Python package**: Generated when building LAMMPS (see below)
 
@@ -118,7 +118,6 @@ Your LAMMPS input should begin with standard settings::
 
     units         metal
     atom_style    atomic
-    atom_modify   map yes
     newton        on
 
 Then define the ML-IAP pair style with your converted model::
@@ -183,7 +182,6 @@ Here's a complete example LAMMPS script for using MACE with ML-IAP::
     # MACE ML-IAP example
     units         metal
     atom_style    atomic
-    atom_modify   map yes
     newton        on
 
     # Read structure
