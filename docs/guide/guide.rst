@@ -17,6 +17,7 @@ User Guide
     ase
     descriptors
     hessian
+    polarizability
     cuda_acceleration
     openmm
     lammps

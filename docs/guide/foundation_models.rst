@@ -16,7 +16,9 @@ Currently available pretrained MACE models:
    "MACE-MATPES-0",  "89",  "MATPES",          "PBE/R2SCAN",            "Materials",  "matpes-pbe_, matpes-r2scan_",        ">=v0.3.10", "PBE and R2SCAN models for MATPES dataset. Latest recommended ones.",      "ASL"
    "MACE-OFF23",     "10",  "SPICE v1",        "DFT (wB97M+D3)",        "Organic Chemistry",  "small-off_, medium-off_, large-off_", ">=v0.3.6",  "Initial release covering neutral organic chemistry.",                      "ASL"
    "MACE-MH-1/0",    "89",  "OMAT/OMOL/OC20/MATPES", "DFT (PBE/R2SCAN/wB97M-VV10)",    "Materials/Molecules/Surfaces",  "mace-mh-1_, mace-mh-0_", ">=v0.3.14",  "Multihead model for materials chemistry. `More info. <https://huggingface.co/mace-foundations/mace-mh-1>`_",       "ASL"
+   "MACE-MDP",       "10",  "SPICE-α",         "DFT (wB97M-D3(BJ)/def2-TZVPP)", "Organic systems (`More info. <https://chemrxiv.org/doi/full/10.26434/chemrxiv.15000716>`_)", "mace-mdp-model_", ">=v0.3.16", "Dipole moments & polarizabilities only; not for energies/forces.", "`ASL <https://github.com/Nilsgoe/MACE-MDP>`_"
 
+.. _mace-mdp-model: https://raw.githubusercontent.com/Nilsgoe/MACE-MDP/main/models/MACE-MDP.model
 .. _small: https://github.com/ACEsuit/mace-mp/releases/download/mace_mp_0/2023-12-10-mace-128-L0_energy_epoch-249.model
 .. _medium: https://github.com/ACEsuit/mace-mp/releases/download/mace_mp_0/2023-12-03-mace-128-L1_epoch-199.model
 .. _large: https://github.com/ACEsuit/mace-mp/releases/download/mace_mp_0/2024-01-07-mace-128-L2_epoch-199.model
@@ -115,6 +117,55 @@ The models can also be used simply as an ASE calculator:
     atoms.set_calculator(calc)
     print(atoms.get_potential_energy())
 
+
+###########################
+MACE-MDP: Pretrained Model for Dipole Moments and Polarizabilities
+###########################
+
+`MACE-MDP <https://github.com/Nilsgoe/MACE-MDP>`_ is a pretrained model for
+predicting molecular dipole moments and fully anisotropic polarizability tensors
+for organic systems. It is trained on the SPICE-α dataset using
+DFT (wB97M-D3(BJ)/def2-TZVPP) and covers 10 elements (H, C, N, O, P, S, F, Cl, Br, I).
+
+.. warning::
+
+   MACE-MDP is designed exclusively for predicting dipole moments and
+   polarizabilities. It is **not** suitable for energies or forces. Fine-tuning
+   is not available at this time.
+
+The model can be used as an ASE calculator via the ``mace_mdp`` convenience
+function, which automatically downloads and caches the model on first use:
+
+.. code-block:: python
+
+    import numpy as np
+    from ase import build
+    from mace.calculators import mace_mdp
+
+    calc = mace_mdp(device="cuda", default_dtype="float64")
+    atoms = build.molecule("H2O")
+    atoms.calc = calc
+
+    alpha = np.asarray(calc.get_property("polarizability", atoms)).reshape(3, 3)
+    print("Polarizability tensor:\n", alpha)
+    print("Dipole moment:", atoms.get_dipole_moment())
+
+For detailed usage examples including IR and Raman spectra, see the
+:ref:`polarizability` page and the `MACE-MDP tutorial notebooks
+<https://github.com/Nilsgoe/MACE-MDP/tree/main/examples>`_.
+
+The model is published under the Academic Software License
+(`ASL <https://github.com/Nilsgoe/MACE-MDP>`_). If you use it, please cite:
+
+.. code-block:: latex
+
+    @article{gonnheimer2025macemdp,
+        title={MACE-MDP: A General Dipole and Polarizability Model for Organic Molecules and Materials},
+        author={Nils G{\"o}nnheimer and Karsten Reuter and Venkat Kapil and Johannes T. Margraf},
+        year={2025},
+        journal={ChemRxiv},
+        doi={10.26434/chemrxiv.15000716}
+    }
 
 ###########################
 MACE-ANI-CC: Coupled cluster Accurate Pretrained Model for H, C, N, O elements
